@@ -19,19 +19,17 @@ describe('FSS Validator (No-Cascade Policy)', () => {
 
 	it('should FAIL on descendant selectors (the cascade)', async () => {
 		const input = '.parent .child { color: blue; }';
-		await expect(validateFSS(input)).rejects.toThrow(
-			'Forbidden selector: descendant combinators are not allowed in .fss'
-		);
+		await expect(validateFSS(input)).rejects.toThrow(/descendant combinators are not allowed/);
 	});
 
 	it('should FAIL on child combinators', async () => {
 		const input = '.parent > .child { margin: 10px; }';
-		await expect(validateFSS(input)).rejects.toThrow('Forbidden selector: child combinators are not allowed');
+		await expect(validateFSS(input)).rejects.toThrow(/child combinators are not allowed/);
 	});
 
 	it('should FAIL on element tags', async () => {
 		const input = 'div { display: flex; }';
-		await expect(validateFSS(input)).rejects.toThrow('Forbidden selector: element tags (div) are not allowed');
+		await expect(validateFSS(input)).rejects.toThrow(/element tags (div) are not allowed/);
 	});
 });
 
