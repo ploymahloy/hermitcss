@@ -16,3 +16,32 @@ describe('FSS Compiler', () => {
 		await expect(compileFSS(input)).rejects.toThrow(/descendant combinators/);
 	});
 });
+
+it('should handle @define variables and remove the block from output', async () => {
+	const input = `
+	  @define { 
+		$bg: #000; 
+		$text: white; 
+	  }
+	  .box { background: $bg; color: $text; }
+	`;
+
+	const output = await compileFSS(input);
+
+	expect(output).toContain('background: #000');
+	expect(output).toContain('color: white');
+	expect(output).not.toContain('@define');
+	expect(output).not.toContain('$bg');
+});
+
+it('should fail if a variable is used but not defined', async () => {
+	const input = '.box { color: $missing; }';
+	await expect(compileFSS(input)).rejects.toThrow(/Variable \$missing is not defined/);
+});
+
+it('should fail if a variable is defined but not used', async () => {
+	const input = `
+	  @define { $bg: #000; }
+	`;
+	await expect(compileFSS(input)).rejects.toThrow(/Variable \$bg is not used/);
+});
