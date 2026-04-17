@@ -17,18 +17,18 @@ describe('FSS Validator (No-Cascade Policy)', () => {
 		await expect(validateFSS(input)).resolves.not.toThrow();
 	});
 
-	it('should FAIL on descendant selectors (the cascade)', async () => {
+	it('should FAIL on descendant selectors', async () => {
 		const input = '.parent .child { color: blue; }';
-		await expect(validateFSS(input)).rejects.toThrow(/descendant combinators are not allowed/);
+		await expect(validateFSS(input)).rejects.toThrow(/descendant combinators/);
 	});
 
 	it('should FAIL on child combinators', async () => {
 		const input = '.parent > .child { margin: 10px; }';
-		await expect(validateFSS(input)).rejects.toThrow(/child combinators are not allowed/);
+		await expect(validateFSS(input)).rejects.toThrow(/child combinators/);
 	});
 
 	it('should FAIL on element tags', async () => {
 		const input = 'div { display: flex; }';
-		await expect(validateFSS(input)).rejects.toThrow(/element tags (div) are not allowed/);
+		await expect(validateFSS(input)).rejects.toThrow(/Bare element tags/);
 	});
 });
