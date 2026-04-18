@@ -36,36 +36,39 @@ function buildFssModuleCode(compiledCss: string, runtimeImport: string): string 
 export default function fssPlugin(options: FssPluginOptions = {}) {
 	const runtimeImport = options.runtimeImport ?? 'fss-compiler';
 
+	const compile = async function (
+		this: any,
+		code: string,
+		id: string
+	): Promise<FssTransformResult | null> {
+		if (!id.endsWith('.fss')) {
+			return null;
+		}
+
+		try {
+			const compiledCss: string = await compileFSS(code);
+			const jsCode: string = buildFssModuleCode(compiledCss, runtimeImport);
+
+			return {
+				code: jsCode,
+				map: { mappings: '' }
+			};
+		} catch (err: any) {
+			const errorMessage = `FSS Compilation Error in ${id}: ${err.message}`;
+
+			if (this && typeof this.error === 'function') {
+				this.error(errorMessage);
+			} else {
+				throw new Error(errorMessage);
+			}
+
+			return null;
+		}
+	};
+
 	return {
 		name: 'vite-plugin-fss',
-		async compile(this: any, code: string, id: string): Promise<FssTransformResult | null> {
-			if (!id.endsWith('.fss')) {
-				return null;
-			}
-
-			try {
-				const compiledCss: string = await compileFSS(code);
-				const jsCode: string = buildFssModuleCode(compiledCss, runtimeImport);
-
-				return {
-					code: jsCode,
-					map: { mappings: '' }
-				};
-			} catch (err: any) {
-				const errorMessage = `FSS Compilation Error in ${id}: ${err.message}`;
-
-				if (this && typeof this.error === 'function') {
-					this.error(errorMessage);
-				} else {
-					throw new Error(errorMessage);
-				}
-
-				return null;
-			}
-		},
-
-		transform(this: any, code: string, id: string) {
-			return this.compile(code, id);
-		}
+		compile,
+		transform: compile
 	};
 }
