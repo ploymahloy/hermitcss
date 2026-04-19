@@ -2,3 +2,7 @@
 node_modules/
 build/
 dist/
+
+# Editor: esbuild/tsc outputs and packaged extensions
+editor/**/out/
+*.vsix
