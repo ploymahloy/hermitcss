@@ -1,24 +1,35 @@
 import postcss from 'postcss';
 import valueParser from 'postcss-value-parser';
 
-export async function processVariables(css: string): Promise<string> {
+const DEFINE_BLOCK = /@define\s*\{([\s\S]*?)\}/;
+
+/** Names and values from the first `@define { ... }` block. */
+export function parseDefineVariables(css: string): Record<string, string> {
 	const variables: Record<string, string> = {};
+	const match = css.match(DEFINE_BLOCK);
+	if (!match?.[1]) return variables;
+	for (const pair of match[1].split(';')) {
+		const trimmed = pair.trim();
+		if (!trimmed) continue;
+		const colon = trimmed.indexOf(':');
+		if (colon === -1) continue;
+		const key = trimmed.slice(0, colon).trim();
+		const value = trimmed.slice(colon + 1).trim();
+		if (!key || !value || !key.startsWith('$')) continue;
+		variables[key] = value;
+	}
+	return variables;
+}
+
+export function listDefineVariableNames(css: string): string[] {
+	return Object.keys(parseDefineVariables(css));
+}
+
+export async function processVariables(css: string): Promise<string> {
+	const variables = parseDefineVariables(css);
 	const usedVariables = new Set<string>();
 
-	// Extract @define block
-	const defineRegex = /@define\s*\{([\s\S]*?)\}/;
-	const match = css.match(defineRegex);
-
-	if (match) {
-		const rawVars = match[1];
-		for (const pair of rawVars?.split(';') ?? []) {
-			const [key, value] = pair.split(':').map(s => s.trim());
-			if (!key || !value || !key.startsWith('$')) continue;
-			variables[key] = value;
-		}
-	}
-
-	const defineKeywordRemoved = css.replace(defineRegex, '');
+	const defineKeywordRemoved = css.replace(DEFINE_BLOCK, '');
 
 	const processor = postcss([
 		{
