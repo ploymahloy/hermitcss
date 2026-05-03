@@ -1,6 +1,6 @@
 {
   "name": "hermitcss",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "HermitCSS — light-DOM authoring as *.hcss (CSS syntax) plus optional @define preprocessing; cascade layers beat legacy specificity when non-Hermit CSS lives in @layer.",
   "type": "module",
   "license": "ISC",
