@@ -1,150 +1,108 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { compileFSS } from '../../src/core/compiler.js';
-import fssPlugin from '../../src/integrations/vite-plugin.js';
+import * as compiler from '../../src/core/compiler.js';
+import hermitCssVitePlugin from '../../src/integrations/vite-plugin.js';
 
-vi.mock('../../src/core/compiler.js', () => ({
-	compileFSS: vi.fn((input: string) => Promise.resolve(`.btn { color: ${input}; }`))
-}));
+vi.mock('../../src/core/compiler.js', async importOriginal => {
+	const actual = await importOriginal<typeof import('../../src/core/compiler.js')>();
+	return {
+		...actual,
+		compileHermitCSS: vi.fn((input: string) => Promise.resolve(`.compiled { seed: "${input.trim()}"; }`))
+	};
+});
 
-const TEST_RUNTIME_IMPORT = new URL('../../src/index.ts', import.meta.url).href;
-
-async function importGeneratedModule(code: string) {
-	const stripped = code.replace(/^import \{ createFssShadowStyles \} from [^;]+;\s*\n/m, '');
-	const wrapped = [
-		`function createFssShadowStyles(css) {`,
-		`	return { adopt() {}, update(_next) {} };`,
-		`}`,
-		stripped
-	].join('\n');
-	const url = `data:text/javascript;charset=utf-8,${encodeURIComponent(wrapped)}`;
-	return import(url);
-}
-
-describe('vite-plugin-fss', () => {
-	const plugin = fssPlugin({ runtimeImport: TEST_RUNTIME_IMPORT });
+describe('vite-plugin-hermitcss', () => {
+	let plugin = hermitCssVitePlugin();
 
 	beforeEach(() => {
-		vi.mocked(compileFSS).mockImplementation((input: string) => Promise.resolve(`.btn { color: ${input}; }`));
+		vi.clearAllMocks();
+		plugin = hermitCssVitePlugin();
+		vi.mocked(compiler.compileHermitCSS).mockImplementation((input: string) =>
+			Promise.resolve(`.compiled { seed: "${input.trim()}"; }`)
+		);
 	});
 
-	describe('module integrity', () => {
-		it('should ignore non-fss files', async () => {
-			const result = await plugin.compile('body { color: red; }', 'styles.css');
-			expect(result).toBeNull();
-		});
-
-		it('should compile .fss files into a JS module with map', async () => {
-			const fssContent = 'blue';
-			const id = 'test.fss';
-
-			const result = await plugin.compile(fssContent, id);
-			expect(result).not.toBeNull();
-			if (result === null) {
-				return;
-			}
-
-			expect(result).toHaveProperty('code');
-			expect(result.map).toEqual({ mappings: '' });
-
-			const compiledMock = `.btn { color: ${fssContent}; }`;
-			expect(result.code).toContain(`import { createFssShadowStyles } from ${JSON.stringify(TEST_RUNTIME_IMPORT)}`);
-			expect(result.code).toContain(`const compiledCss = ${JSON.stringify(compiledMock)};`);
-			expect(result.code).toContain('export default compiledCss');
-			expect(result.code).not.toContain(':host *');
-		});
-
-		it('should stringify CSS with quotes, backslashes, and newlines for a valid export', async () => {
-			const compiledCss = '.rule { content: "x"; }\n.line2\\path';
-			vi.mocked(compileFSS).mockResolvedValueOnce(compiledCss);
-
-			const result = await plugin.compile('input', 'edge.fss');
-			expect(result).not.toBeNull();
-			if (result === null) {
-				return;
-			}
-
-			expect(result.code).toContain(`const compiledCss = ${JSON.stringify(compiledCss)};`);
-			expect(result.code).toContain('export default compiledCss');
-		});
-
-		it('should produce ESM that dynamic-imports without syntax errors', async () => {
-			const compiledCss = '.ok { color: green; }';
-			vi.mocked(compileFSS).mockResolvedValueOnce(compiledCss);
-
-			const result = await plugin.compile('any', 'smoke.fss');
-			expect(result).not.toBeNull();
-			if (result === null) {
-				return;
-			}
-
-			const mod = await importGeneratedModule(result.code);
-			expect(mod.default).toBe(compiledCss);
-			expect(mod.fssStyles).toBeDefined();
-			expect(typeof mod.fssStyles.adopt).toBe('function');
-			expect(typeof mod.fssStyles.update).toBe('function');
-		});
+	it('ignores non-hcss files', async () => {
+		const result = await plugin.compile.call(plugin, '* {}', '/x/foo.css');
+		expect(result).toBeNull();
+		expect(compiler.compileHermitCSS).not.toHaveBeenCalled();
 	});
 
-	describe('HMR lifecycle', () => {
-		it('should persist handle on hot.data and update on accept', async () => {
-			const result = await plugin.compile('red', 'test.fss');
-			expect(result).not.toBeNull();
-			if (result === null) {
-				return;
-			}
+	it('compiles .hcss into a JS module with default CSS string export', async () => {
+		const hcssContent = 'blue-token';
+		const id = 'test.hcss';
 
-			const { code } = result;
-			expect(code).toContain('if (import.meta.hot)');
-			expect(code).toContain('import.meta.hot.accept');
-			expect(code).toContain('import.meta.hot.accept((newModule) => {');
-			expect(code).toContain('import.meta.hot.data ??=');
-			expect(code).toContain('import.meta.hot.data.fssStyles ??=');
-			expect(code).toContain('fssStyles.update(newModule.default)');
-			expect(code).toContain('newModule?.default !== undefined');
-		});
+		const result = await plugin.compile.call(plugin, hcssContent, id);
+		expect(result).not.toBeNull();
+		expect(compiler.compileHermitCSS).toHaveBeenCalledWith(hcssContent);
+		expect(result!.code).toContain('.compiled');
+		expect(result!.code).toContain('export default compiledCss');
+
+		const exported = readCompiledCssFromGeneratedModule(result!.code);
+		expect(exported).toContain(`seed: "${hcssContent}"`);
 	});
 
-	describe('error resilience', () => {
-		it('should call this.error with file id and message and return null', async () => {
-			vi.mocked(compileFSS).mockRejectedValueOnce(new Error('Syntax Error'));
+	it('builds runnable ESM with the compiled stylesheet', async () => {
+		const compiledCss = '.smoke-test { outline: thick double #333 }';
+		vi.mocked(compiler.compileHermitCSS).mockResolvedValueOnce(compiledCss);
 
-			const mockContext = { error: vi.fn() };
+		const result = await plugin.compile.call(plugin, `any-input`, `/tmp/smoke.hcss`);
 
-			const out = await plugin.compile.call(mockContext, 'invalid-syntax', 'path/to/error.fss');
-
-			expect(out).toBeNull();
-			expect(mockContext.error).toHaveBeenCalledTimes(1);
-			expect(mockContext.error).toHaveBeenCalledWith('FSS Compilation Error in path/to/error.fss: Syntax Error');
-		});
-
-		it('should throw when this.error is not available', async () => {
-			vi.mocked(compileFSS).mockRejectedValueOnce(new Error('boom'));
-
-			await expect(plugin.compile.call({}, 'bad', 'x.fss')).rejects.toThrow(/FSS Compilation Error in x\.fss: boom/);
-		});
+		expect(result).not.toBeNull();
+		expect(readCompiledCssFromGeneratedModule(result!.code)).toBe(compiledCss);
+		expect(result!.code.startsWith(`const compiledCss = `)).toBe(true);
+		await expect(compiler.compileHermitCSS).toHaveResolved();
 	});
 
-	describe('transform hook', () => {
-		it('should delegate transform to compile', async () => {
-			const compiledCss = '.delegate { }';
-			vi.mocked(compileFSS).mockResolvedValue(compiledCss);
+	it('calls this.error during compilation failures', async () => {
+		const mockContext = { error: vi.fn() };
+		vi.mocked(compiler.compileHermitCSS).mockRejectedValueOnce(new SyntaxError('Syntax Error'));
 
-			const fromTransform = await plugin.transform.call(plugin, 'src', 'widget.fss');
-			const fromCompile = await plugin.compile.call(plugin, 'src', 'widget.fss');
+		const out = await plugin.compile.call(mockContext as any, `invalid-css`, `/path/error.hcss`);
 
-			expect(fromTransform).toEqual(fromCompile);
-		});
+		expect(out).toBeNull();
+		expect(mockContext.error).toHaveBeenCalledWith(
+			'HermitCSS compilation error in /path/error.hcss: Syntax Error'
+		);
 	});
 
-	describe('defaults', () => {
-		it('uses fss-compiler as runtimeImport when omitted', async () => {
-			const plain = fssPlugin();
-			const result = await plain.compile.call({}, 'x', 'a.fss');
-			expect(result).not.toBeNull();
-			if (result === null) {
-				return;
-			}
-			expect(result.code).toContain('from "fss-compiler"');
-		});
+	it('throws when compilation fails outside Vite hooks', async () => {
+		vi.mocked(compiler.compileHermitCSS).mockRejectedValueOnce(new Error('boom'));
+
+		await expect(plugin.compile.call({}, 'bad', `/x/token.hcss`)).rejects.toThrow(
+			/HermitCSS compilation error in \/x\/token\.hcss: boom/
+		);
+	});
+
+	it('transform hook mirrors compile', async () => {
+		const compiledCss = '.transform { color: red; }';
+		vi.mocked(compiler.compileHermitCSS).mockResolvedValue(compiledCss);
+
+		const fromTransform = await plugin.transform!.call(plugin, 'src', 'widget.hcss');
+		const fromCompile = await plugin.compile.call(plugin, 'src', 'widget.hcss');
+
+		expect(fromTransform).toEqual(fromCompile);
+	});
+
+	it('exports plugin factory', async () => {
+		const plain = hermitCssVitePlugin();
+		const result = await plain.compile.call({}, 'x', 'a.hcss');
+		expect(result).not.toBeNull();
 	});
 });
+
+function readCompiledCssFromGeneratedModule(code: string): string {
+	const lines = code.split('\n').filter(Boolean);
+	const line =
+		lines.find(l => /^const\s+compiledCss\s*=/.test(l.trim())) ??
+		lines.find(l => l.includes('compiledCss'));
+
+	if (!line) {
+		throw new Error('Hermit vite output missing compiledCss binding');
+	}
+
+	const idx = line.indexOf('=');
+	const rhs = idx >= 0 ? line.slice(idx + 1).trim() : line;
+	const jsonLiteral = rhs.replace(/;$/, '').trim();
+
+	return JSON.parse(jsonLiteral) as string;
+}

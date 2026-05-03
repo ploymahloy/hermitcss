@@ -26,10 +26,15 @@ export function activate(context: vscode.ExtensionContext): void {
 	};
 
 	const clientOptions: LanguageClientOptions = {
-		documentSelector: [{ scheme: 'file', language: 'fss' }]
+		documentSelector: [{ scheme: 'file', language: 'hermitcss' }]
 	};
 
-	client = new LanguageClient('fssLanguageServer', 'FSS Language Server', serverOptions, clientOptions);
+	client = new LanguageClient(
+		'hermitCssLanguageServer',
+		'HermitCSS Language Server',
+		serverOptions,
+		clientOptions
+	);
 	client.start();
 	context.subscriptions.push(client);
 }

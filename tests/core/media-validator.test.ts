@@ -1,18 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { compileFSS } from '../../src/core/compiler.js';
+import { compileHermitCSS } from '../../src/core/compiler.js';
 
-describe('@media in .fss', () => {
-	it('allows @media wrapping flat class selectors', async () => {
-		const input = '@media (min-width: 1px) { .ok { color: red; } }';
-		const output = await compileFSS(input);
+describe('@media in .hcss', () => {
+	it('allows combinators inside @media', async () => {
+		const input = '@media (min-width: 1px) { .bad .nested { color: blue; } }';
+		const output = await compileHermitCSS(input);
 
 		expect(output).toMatch(/@media/);
-		expect(output).toContain('.ok');
-		expect(output).toContain('color: red');
-	});
-
-	it('rejects descendant combinators inside @media', async () => {
-		const input = '@media (min-width: 1px) { .bad .nested { color: blue; } }';
-		await expect(compileFSS(input)).rejects.toThrow(/descendant combinators/);
+		expect(output).toContain('.bad');
+		expect(output).toContain('.nested');
 	});
 });

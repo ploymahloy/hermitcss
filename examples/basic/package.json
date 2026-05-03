@@ -1,6 +1,7 @@
 {
-  "name": "fss-example-basic",
+  "name": "hermit-basic-example",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,7 +9,8 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
+    "hermitcss": "file:../..",
+    "typescript": "~6.0.3",
     "vite": "^6.3.5"
   }
 }

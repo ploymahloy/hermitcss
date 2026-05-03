@@ -1,12 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>FSS example</title>
+		<title>HermitCSS example</title>
 	</head>
-	<body>
-		<div id="app"></div>
+	<body style="margin: 0; padding: 2rem; font-family: system-ui, sans-serif">
+		<button id="cta" type="button" class="callout-highlight">Hermit rewrote sizing</button>
+		<p class="intro-banner">
+			Legacy CSS (in <code>@layer dinosaur-app</code>) wanted enormous typography. Hermit's unlayered rules win calmly.
+		</p>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

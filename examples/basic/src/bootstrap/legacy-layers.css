@@ -1,0 +1,14 @@
+/* Every stylesheet that isn't Hermit should live behind @layer in real apps */
+@layer dinosaur-app {
+	#cta {
+		font-size: 48px;
+		letter-spacing: 1rem;
+		color: fuchsia;
+		padding: 2rem;
+	}
+
+	.intro-banner {
+		font-size: 10px;
+		opacity: 0.3;
+	}
+}

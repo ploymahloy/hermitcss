@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { getHover } from '../../editor/fss-language-server/src/hover.js';
+import { getHover } from '../../editor/hermitcss-language-server/src/hover.js';
 
-describe('fss-language-server hover', () => {
+describe('HermitCSS language-server hover', () => {
 	it('shows @define value for variables', () => {
 		const doc = TextDocument.create(
-			'file:///x.fss',
-			'fss',
+			'file:///x.hcss',
+			'hermitcss',
 			1,
 			`@define { $pad: 8px; }
-			:host { padding: $pad; }`
+.hero { padding: $pad; }`
 		);
 		const line = doc.getText({
 			start: { line: 1, character: 0 },
@@ -24,11 +24,11 @@ describe('fss-language-server hover', () => {
 
 	it('reports classes not declared in selectors', () => {
 		const doc = TextDocument.create(
-			'file:///x.fss',
-			'fss',
+			'file:///x.hcss',
+			'hermitcss',
 			1,
 			`.foo { color: red; }
-			 .bar { margin: .nope; }`
+ .bar { margin: .nope; }`
 		);
 		const line = doc.getText({
 			start: { line: 1, character: 0 },

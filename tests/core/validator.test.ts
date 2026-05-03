@@ -1,34 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { validateFSS } from '../../src/core/validator.js';
+import { validateHermitCss } from '../../src/core/validator.js';
+import { compileHermitCSS } from '../../src/core/compiler.js';
 
-describe('FSS Validator (No-Cascade Policy)', () => {
-	it('should allow single class selectors', async () => {
-		const input = '.button { color: red; }';
-		await expect(validateFSS(input)).resolves.not.toThrow();
+describe('validateHermitCss (PostCSS syntax parse)', () => {
+	it('accepts standard selector patterns', async () => {
+		const input =
+			'#huge-id { color: red; }\n.leaf button { margin: 0; }\n.parent > .child { }\naside + footer { }\n.foo ~ .bar { }';
+		await expect(validateHermitCss(input)).resolves.not.toThrow();
 	});
 
-	it('should allow :host selectors', async () => {
-		const input = ':host { display: block; }';
-		await expect(validateFSS(input)).resolves.not.toThrow();
+	it('accepts @layer blocks', async () => {
+		await expect(validateHermitCss('@layer legacy-app { div { padding: 0; } }')).resolves.not.toThrow();
 	});
+});
 
-	it('should allow pseudo-classes on single classes', async () => {
-		const input = '.button:hover { opacity: 0.8; }';
-		await expect(validateFSS(input)).resolves.not.toThrow();
-	});
-
-	it('should FAIL on descendant selectors', async () => {
-		const input = '.parent .child { color: blue; }';
-		await expect(validateFSS(input)).rejects.toThrow(/descendant combinators/);
-	});
-
-	it('should FAIL on child combinators', async () => {
-		const input = '.parent > .child { margin: 10px; }';
-		await expect(validateFSS(input)).rejects.toThrow(/child combinators/);
-	});
-
-	it('should FAIL on element tags', async () => {
-		const input = 'div { display: flex; }';
-		await expect(validateFSS(input)).rejects.toThrow(/Bare element tags/);
+describe('compileHermitCSS preprocessor errors surface to diagnostics', () => {
+	it('rejects undefined $tokens', async () => {
+		await expect(compileHermitCSS('.pill { border-color: $missing; }')).rejects.toThrow(/not defined in @define/);
 	});
 });

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { extractClasses } from '../../src/integrations/extractor.js';
 
-describe('FSS Class Extractor', () => {
+describe('HermitCSS class extractor', () => {
 	it('should extract simple class names', () => {
 		const input = '.btn { color: red; } .card { padding: 10px; }';
 		const classes = extractClasses(input);

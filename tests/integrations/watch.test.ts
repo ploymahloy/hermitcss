@@ -1,45 +1,60 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import chokidar, { type FSWatcher } from 'chokidar';
-import fs from 'node:fs/promises';
+
+const readFileMock = vi.fn();
+vi.mock('node:fs/promises', () => ({
+	default: {
+		readFile: (...args: unknown[]) => readFileMock(...args)
+	}
+}));
+
+const watcherOn = vi.fn();
+const watcherInstance = {
+	on: watcherOn.mockImplementation(() => watcherInstance),
+	close: vi.fn()
+};
+vi.mock('chokidar', () => ({
+	default: {
+		watch: vi.fn(() => watcherInstance)
+	}
+}));
+
+vi.mock('../../src/integrations/type-generator.js', () => ({
+	generateTypes: vi.fn(async () => undefined)
+}));
+
+import chokidar from 'chokidar';
+import { generateTypes } from '../../src/integrations/type-generator.js';
 import { watch } from '../../src/integrations/watch.js';
-import * as typeGen from '../../src/integrations/type-generator.js';
 
-vi.mock('chokidar');
-vi.mock('node:fs/promises');
-
-describe('FSS Watcher Utility', () => {
-	let mockWatcher: FSWatcher;
-
+describe('HermitCSS watch()', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		mockWatcher = {
-			on: vi.fn().mockReturnThis()
-		} as unknown as FSWatcher;
-
-		vi.mocked(chokidar.watch).mockReturnValue(mockWatcher);
+		watcherOn.mockImplementation(() => watcherInstance as any);
+		readFileMock.mockResolvedValue('.panel { outline: thin solid maroon }');
 	});
 
-	it('should trigger type generation on both "add" and "change"', async () => {
-		const generateSpy = vi.spyOn(typeGen, 'generateTypes').mockResolvedValue(undefined);
-		vi.mocked(fs.readFile).mockResolvedValue('.test { color: green; }');
+	it('mirrors Hermit *.hcss files into generated types', async () => {
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		watch('/app/styles');
 
-		watch('./src');
+		expect(chokidar.watch).toHaveBeenCalledWith('/app/styles/**/*.hcss', { ignoreInitial: false });
 
-		const onMock = vi.mocked(mockWatcher.on);
-		const callbacks = onMock.mock.calls;
+		expect(watcherOn).toHaveBeenCalledWith('change', expect.any(Function));
+		expect(watcherOn).toHaveBeenCalledWith('add', expect.any(Function));
+		expect(watcherOn).toHaveBeenCalledWith('error', expect.any(Function));
 
-		const addCallback = callbacks.find(c => c[0] === 'add')?.[1];
-		const changeCallback = callbacks.find(c => c[0] === 'change')?.[1];
+		const [, addCb] =
+			vi.mocked(watcherOn).mock.calls.find(call => call[0] === 'add') ??
+			([]);
+		await (addCb as (path: string) => Promise<void>)('/app/styles/card.hcss');
 
-		if (addCallback) {
-			await addCallback('new.fss');
-			expect(generateSpy).toHaveBeenNthCalledWith(1, 'new.fss', expect.any(String));
-		}
+		expect(readFileMock).toHaveBeenCalledWith('/app/styles/card.hcss', 'utf-8');
+		expect(generateTypes).toHaveBeenCalledWith(
+			'/app/styles/card.hcss',
+			'.panel { outline: thin solid maroon }'
+		);
+		expect(spy.mock.calls.some(([line]) => String(line).includes('[HermitCSS]'))).toBe(true);
 
-		if (changeCallback) {
-			await changeCallback('existing.fss');
-			expect(generateSpy).toHaveBeenNthCalledWith(2, 'existing.fss', expect.any(String));
-		}
+		spy.mockRestore();
 	});
 });

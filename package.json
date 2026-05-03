@@ -1,18 +1,43 @@
 {
-  "name": "fss-compiler",
+  "name": "hermitcss",
   "version": "1.0.0",
-  "description": "cascadeless stylesheets",
-  "main": "index.js",
+  "description": "HermitCSS — light-DOM authoring as *.hcss (CSS syntax) plus optional @define preprocessing; cascade layers beat legacy specificity when non-Hermit CSS lives in @layer.",
+  "type": "module",
+  "license": "ISC",
+  "author": "",
+  "files": ["dist", "hcss-module.d.ts", "LICENSE"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./vite-plugin": {
+      "types": "./dist/integrations/vite-plugin.d.ts",
+      "import": "./dist/integrations/vite-plugin.js",
+      "default": "./dist/integrations/vite-plugin.js"
+    },
+    "./inject": {
+      "types": "./dist/runtime/light-dom.d.ts",
+      "import": "./dist/runtime/light-dom.js",
+      "default": "./dist/runtime/light-dom.js"
+    },
+    "./hcss-module": {
+      "types": "./hcss-module.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build && npx vitest run",
     "test": "vitest",
     "examples:dev": "npm run dev --prefix examples/basic",
-    "editor:build": "npm run build --prefix editor/fss-language-server && npm run compile --prefix editor/vscode-fss",
-    "editor:package": "npm run editor:build && npm run vsix --prefix editor/vscode-fss"
+    "editor:build": "npm run build --prefix editor/hermitcss-language-server && npm run compile --prefix editor/vscode-hermitcss",
+    "editor:package": "npm run editor:build && npm run vsix --prefix editor/vscode-hermitcss"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
+  "keywords": ["hermitcss", "hcss", "css", "cascade-layer", "vite"],
   "dependencies": {
     "chalk": "^5.6.2",
     "chokidar": "^5.0.0",

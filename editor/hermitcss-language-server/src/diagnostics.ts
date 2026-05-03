@@ -1,6 +1,6 @@
 import type { Diagnostic, Range } from 'vscode-languageserver/node';
 import { DiagnosticSeverity } from 'vscode-languageserver/node';
-import { compileFSS } from '../../../src/index.js';
+import { compileHermitCSS } from '../../../src/index.js';
 
 interface PostcssLikeError {
 	message?: string;
@@ -12,7 +12,7 @@ interface PostcssLikeError {
 
 export async function getCompilationDiagnostics(text: string): Promise<Diagnostic[]> {
 	try {
-		await compileFSS(text);
+		await compileHermitCSS(text);
 		return [];
 	} catch (err) {
 		return [normalizeErrorDiagnostic(text, err)];
@@ -28,7 +28,7 @@ export function normalizeErrorDiagnostic(text: string, err: unknown): Diagnostic
 			severity: DiagnosticSeverity.Error,
 			range: postcssLikeRange(text, e),
 			message,
-			source: 'fss'
+			source: 'hermitcss'
 		};
 	}
 
@@ -36,7 +36,7 @@ export function normalizeErrorDiagnostic(text: string, err: unknown): Diagnostic
 		severity: DiagnosticSeverity.Error,
 		range: guessRangeForPlainError(text, message),
 		message,
-		source: 'fss'
+		source: 'hermitcss'
 	};
 }
 

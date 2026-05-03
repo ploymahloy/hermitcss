@@ -1,28 +1,37 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'node:fs/promises';
 import { generateTypes } from '../../src/integrations/type-generator.js';
 
 vi.mock('node:fs/promises');
 
-describe('FSS Type Generator', () => {
-	it('should generate valid TypeScript definitions from FSS classes', async () => {
-		const fssContent = '.primaryBtn { color: red; } .sidebar_link { display: flex; }';
-		const filePath = '/project/src/Button.fss';
+describe('HermitCSS type generator', () => {
+	beforeEach(() => {
+		vi.mocked(fs.writeFile).mockClear();
+	});
 
-		await generateTypes(filePath, fssContent);
+	it('writes sibling .d.ts for extracted classes', async () => {
+		const hcss = '.primaryBtn { color: red; } .sidebar_link { display: flex; }';
+		const filePath = '/project/src/Button.hcss';
+
+		await generateTypes(filePath, hcss);
 
 		expect(fs.writeFile).toHaveBeenCalledWith(
-			'/project/src/Button.fss.d.ts',
-			expect.stringContaining('export const classes: {'),
+			'/project/src/Button.hcss.d.ts',
+			expect.stringContaining('export const classes = {'),
+			'utf-8'
+		);
+		expect(fs.writeFile).toHaveBeenCalledWith(
+			'/project/src/Button.hcss.d.ts',
+			expect.stringContaining('"primaryBtn"'),
 			'utf-8'
 		);
 	});
 
-	it('should handle empty FSS files gracefully', async () => {
-		await generateTypes('empty.fss', ':host { margin: 0; }');
-		const generatedContent = vi.mocked(fs.writeFile).mock?.calls?.[1]?.[1] as string;
+	it('handles Hermit sheets without extracted classes', async () => {
+		await generateTypes('empty.hcss', '@layer scoped { aside { padding: 0; } }');
+		const generatedContent = vi.mocked(fs.writeFile).mock.calls[0]?.[1] as string;
 
 		expect(generatedContent).toBeDefined();
-		expect(generatedContent).toContain('export const classes: {}');
+		expect(generatedContent).toMatch(/export const classes = \{\}\sas const;/);
 	});
 });

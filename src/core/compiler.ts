@@ -1,7 +1,7 @@
-import { validateFSS } from './validator.js';
+import { validateHermitCss } from './validator.js';
 import { processVariables } from './preprocessor.js';
 
-export async function compileFSS(css: string): Promise<string> {
-	await validateFSS(css);
+export async function compileHermitCSS(css: string): Promise<string> {
+	await validateHermitCss(css);
 	return processVariables(css);
 }

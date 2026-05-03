@@ -1,7 +1,7 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "Flat Style Sheets",
-	"scopeName": "source.fss",
+	"name": "HermitCSS",
+	"scopeName": "source.hermitcss",
 	"patterns": [{ "include": "#main" }],
 	"repository": {
 		"main": {
@@ -16,38 +16,38 @@
 		"comments": {
 			"begin": "/\\*",
 			"captures": {
-				"0": { "name": "punctuation.definition.comment.fss" }
+				"0": { "name": "punctuation.definition.comment.hermitcss" }
 			},
 			"end": "\\*/",
-			"name": "comment.block.fss"
+			"name": "comment.block.hermitcss"
 		},
 		"string-double": {
-			"name": "string.quoted.double.fss",
+			"name": "string.quoted.double.hermitcss",
 			"begin": "\"",
 			"end": "\"",
 			"patterns": [{ "include": "#string-escape" }]
 		},
 		"string-single": {
-			"name": "string.quoted.single.fss",
+			"name": "string.quoted.single.hermitcss",
 			"begin": "'",
 			"end": "'",
 			"patterns": [{ "include": "#string-escape" }]
 		},
 		"string-escape": {
-			"name": "constant.character.escape.fss",
+			"name": "constant.character.escape.hermitcss",
 			"match": "\\\\."
 		},
 		"atDefine": {
 			"begin": "(@define)\\s*(\\{)",
 			"beginCaptures": {
-				"1": { "name": "keyword.control.define.fss" },
-				"2": { "name": "punctuation.definition.block.begin.fss" }
+				"1": { "name": "keyword.control.define.hermitcss" },
+				"2": { "name": "punctuation.definition.block.begin.hermitcss" }
 			},
 			"end": "\\}",
 			"endCaptures": {
-				"0": { "name": "punctuation.definition.block.end.fss" }
+				"0": { "name": "punctuation.definition.block.end.hermitcss" }
 			},
-			"name": "meta.at-rule.define.fss",
+			"name": "meta.at-rule.define.hermitcss",
 			"patterns": [{ "include": "#defineInner" }]
 		},
 		"defineInner": {
@@ -56,12 +56,12 @@
 				{
 					"match": "(\\$[\\w-]+)\\s*(:)\\s*([^;]+)(;)?",
 					"captures": {
-						"1": { "name": "variable.other.definition.fss" },
-						"2": { "name": "punctuation.separator.key-value.fss" },
+						"1": { "name": "variable.other.definition.hermitcss" },
+						"2": { "name": "punctuation.separator.key-value.hermitcss" },
 						"3": {
 							"patterns": [{ "include": "#valueTokens" }]
 						},
-						"4": { "name": "punctuation.terminator.rule.fss" }
+						"4": { "name": "punctuation.terminator.rule.hermitcss" }
 					}
 				}
 			]
@@ -73,9 +73,9 @@
 			},
 			"end": "\\}",
 			"endCaptures": {
-				"0": { "name": "punctuation.definition.block.end.fss" }
+				"0": { "name": "punctuation.definition.block.end.hermitcss" }
 			},
-			"name": "meta.rule.fss",
+			"name": "meta.rule.hermitcss",
 			"patterns": [{ "include": "#ruleBody" }]
 		},
 		"selectorTokens": {
@@ -94,7 +94,7 @@
 				},
 				{
 					"match": "\\b[a-zA-Z][\\w-]*",
-					"name": "invalid.illegal.tag.fss"
+					"name": "invalid.illegal.tag.hermitcss"
 				}
 			]
 		},
@@ -125,7 +125,7 @@
 				{ "include": "#string-single" },
 				{
 					"match": "\\$[\\w-]+\\b",
-					"name": "variable.other.fss"
+					"name": "variable.other.hermitcss"
 				},
 				{
 					"match": "#[0-9a-fA-F]{3,8}\\b",

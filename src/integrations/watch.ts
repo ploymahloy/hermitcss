@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { generateTypes } from './type-generator.js';
 
 export function watch(dir: string) {
-	const watcher = chokidar.watch(`${dir}/**/*.fss`, {
+	const watcher = chokidar.watch(`${dir}/**/*.hcss`, {
 		ignoreInitial: false // Generates types for existing files on startup
 	});
 
@@ -11,9 +11,9 @@ export function watch(dir: string) {
 		try {
 			const content = await fs.readFile(path, 'utf-8');
 			await generateTypes(path, content);
-			console.log(`[FSS] Mirrored: ${path}`);
+			console.log(`[HermitCSS] Mirrored: ${path}`);
 		} catch (err) {
-			console.error(`[FSS] Mirror Error: ${err}`);
+			console.error(`[HermitCSS] Mirror Error: ${err}`);
 		}
 	};
 
@@ -21,7 +21,7 @@ export function watch(dir: string) {
 	watcher.on('change', update);
 	watcher.on('add', update);
 	watcher.on('error', err => {
-		console.error(`[FSS] Watch Error: ${err}`);
+		console.error(`[HermitCSS] Watch Error: ${err}`);
 	});
 
 	return watcher;

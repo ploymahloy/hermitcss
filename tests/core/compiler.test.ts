@@ -1,50 +1,41 @@
 import { describe, it, expect } from 'vitest';
-import { compileFSS } from '../../src/core/compiler.js';
-import { FSS_BASE_CSS } from '../../src/runtime/base-css.js';
+import { compileHermitCSS } from '../../src/core/compiler.js';
 
-describe('FSS Compiler', () => {
-	it('should return component CSS only (reset lives in FSS_BASE_CSS)', async () => {
-		const input = '.btn { color: red; }';
-		const output = await compileFSS(input);
+describe('compileHermitCSS', () => {
+	it('returns processed CSS with @define substitutions', async () => {
+		const input = '@define { $bg: #fff; }\n.hero { background: $bg; }';
+		const output = await compileHermitCSS(input);
 
-		expect(output).toBe('.btn { color: red; }');
-		expect(output).not.toContain(':host *');
-
-		expect(FSS_BASE_CSS).toContain(':host * {');
-		expect(FSS_BASE_CSS).toContain('all: unset');
+		expect(output).not.toContain('@define');
+		expect(output).toContain('#fff');
+		expect(output).toContain('.hero');
+		expect(output).not.toContain('$bg');
 	});
 
-	it('should still fail on illegal selectors during compilation', async () => {
-		const input = '.parent .child { color: blue; }';
-		await expect(compileFSS(input)).rejects.toThrow(/descendant combinators/);
+	it('passes through full selector lists', async () => {
+		const input = 'section#main .cta > a:link { outline: none; }';
+		const output = await compileHermitCSS(input);
+		expect(output).toContain('section#main');
 	});
-});
 
-it('should handle @define variables and remove the block from output', async () => {
-	const input = `
-	  @define { 
-		$bg: #000; 
-		$text: white; 
-	  }
-	  .box { background: $bg; color: $text; }
-	`;
+	it('rejects unknown $variables', async () => {
+		const input = '.x { color: $missing; }';
+		await expect(compileHermitCSS(input)).rejects.toThrow(/not defined in @define/);
+	});
 
-	const output = await compileFSS(input);
+	it('rejects unused @define vars', async () => {
+		const input = `
+@define { $unused: pink; }
+.y { opacity: 0.9; }
+`;
+		await expect(compileHermitCSS(input)).rejects.toThrow(/not used/);
+	});
 
-	expect(output).toContain('background: #000');
-	expect(output).toContain('color: white');
-	expect(output).not.toContain('@define');
-	expect(output).not.toContain('$bg');
-});
-
-it('should fail if a variable is used but not defined', async () => {
-	const input = '.box { color: $missing; }';
-	await expect(compileFSS(input)).rejects.toThrow(/Variable \$missing is not defined/);
-});
-
-it('should fail if a variable is defined but not used', async () => {
-	const input = `
-	  @define { $bg: #000; }
-	`;
-	await expect(compileFSS(input)).rejects.toThrow(/Variable \$bg is not used/);
+	it('keeps layered and unlayered authoring intact', async () => {
+		const input = `@layer legacy { #id { margin: 9px } }
+.unbeaten-btn { margin: 10px; }`;
+		const output = await compileHermitCSS(input);
+		expect(output).toContain('@layer');
+		expect(output).toContain('.unbeaten-btn');
+	});
 });

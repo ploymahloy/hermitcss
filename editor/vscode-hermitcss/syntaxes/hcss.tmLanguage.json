@@ -1,0 +1,187 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "HermitCSS",
+	"scopeName": "source.css",
+	"patterns": [{ "include": "#main" }],
+	"repository": {
+		"main": {
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#string-double" },
+				{ "include": "#string-single" },
+				{ "include": "#atWrapped" },
+				{ "include": "#atDefine" },
+				{ "include": "#rule" }
+			]
+		},
+		"comments": {
+			"begin": "/\\*",
+			"captures": {
+				"0": { "name": "punctuation.definition.comment.css" }
+			},
+			"end": "\\*/",
+			"name": "comment.block.css"
+		},
+		"string-double": {
+			"name": "string.quoted.double.css",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [{ "include": "#string-escape" }]
+		},
+		"string-single": {
+			"name": "string.quoted.single.css",
+			"begin": "'",
+			"end": "'",
+			"patterns": [{ "include": "#string-escape" }]
+		},
+		"string-escape": {
+			"name": "constant.character.escape.css",
+			"match": "\\\\."
+		},
+		"atDefine": {
+			"begin": "(@define)\\s*(\\{)",
+			"beginCaptures": {
+				"1": { "name": "keyword.control.define.hermitcss" },
+				"2": { "name": "punctuation.definition.block.begin.css" }
+			},
+			"end": "\\}",
+			"endCaptures": {
+				"0": { "name": "punctuation.definition.block.end.css" }
+			},
+			"name": "meta.at-rule.define.hermitcss",
+			"patterns": [{ "include": "#defineInner" }]
+		},
+		"defineInner": {
+			"patterns": [
+				{ "include": "#comments" },
+				{
+					"match": "(\\$[\\w-]+)\\s*(:)\\s*([^;]+)(;)?",
+					"captures": {
+						"1": { "name": "variable.other.definition.hermitcss" },
+						"2": { "name": "punctuation.separator.key-value.css" },
+						"3": {
+							"patterns": [{ "include": "#valueTokens" }]
+						},
+						"4": { "name": "punctuation.terminator.rule.css" }
+					}
+				}
+			]
+		},
+		"atWrapped": {
+			"name": "meta.at-rule.block.css",
+			"begin": "(?m)^\\s*(@(?:media|supports|keyframes|layer|container|starting-style|font-feature-values|font-face)\\b)([^{]*)\\{",
+			"beginCaptures": {
+				"1": { "name": "keyword.control.at-rule.css" },
+				"2": { "patterns": [{ "include": "#valueTokensInline" }] }
+			},
+			"end": "\\}",
+			"patterns": [{ "include": "#blockContent" }]
+		},
+		"rule": {
+			"name": "meta.rule.css",
+			"begin": "(?m)^\\s*([^@{\\{\\}][^\\{]*|\\[[^\\{]*|\\([^\\{\\}]*|\\$[\\w-][^\\{]*)\\{",
+			"beginCaptures": {
+				"1": { "patterns": [{ "include": "#selectorTokens" }] }
+			},
+			"end": "\\}",
+			"patterns": [{ "include": "#blockContent" }]
+		},
+		"selectorTokens": {
+			"patterns": [
+				{
+					"match": ":host\\b(?:\\([^)]*\\))?",
+					"name": "entity.other.attribute-name.pseudo-class.css"
+				},
+				{
+					"match": "::[\\w-]+|\\:[-\\w]+",
+					"name": "entity.other.attribute-name.pseudo-class.css"
+				},
+				{
+					"match": "\\.[\\w-]+",
+					"name": "entity.other.attribute-name.class.css"
+				},
+				{
+					"match": "#[\\w-]+",
+					"name": "entity.other.attribute-name.id.css"
+				},
+				{
+					"match": "\\b[a-zA-Z][\\w-]*\\b",
+					"name": "entity.name.tag.css"
+				},
+				{
+					"match": "\\*",
+					"name": "keyword.operator.css"
+				},
+				{
+					"match": "\\$[\\w-]+\\b",
+					"name": "variable.other.hermitcss"
+				},
+				{
+					"match": ">|~|\\+|&",
+					"name": "keyword.operator.logical.css"
+				},
+				{
+					"match": ",|;",
+					"name": "punctuation.separator.list.css"
+				},
+				{
+					"match": "\\[[^\\]]*\\]",
+					"name": "meta.attribute-selector.css"
+				},
+				{
+					"match": "\\([^)]*\\)",
+					"name": "meta.selector.css"
+				}
+			]
+		},
+		"blockContent": {
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#string-double" },
+				{ "include": "#string-single" },
+				{ "include": "#atWrapped" },
+				{ "include": "#atDefine" },
+				{ "include": "#rule" },
+				{
+					"begin": "([\\w-]+|\\*+)\\s*(:)",
+					"beginCaptures": {
+						"1": { "name": "support.type.property-name.css" },
+						"2": { "name": "punctuation.separator.key-value.css" }
+					},
+					"end": ";|(?=\\})",
+					"endCaptures": {
+						"0": { "name": "punctuation.terminator.rule.css" }
+					},
+					"name": "meta.property-list.css",
+					"patterns": [{ "include": "#valueTokens" }]
+				}
+			]
+		},
+		"valueTokensInline": {
+			"patterns": [{ "include": "#comments" }, { "include": "#valueTokens" }]
+		},
+		"valueTokens": {
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#string-double" },
+				{ "include": "#string-single" },
+				{
+					"match": "\\$[\\w-]+\\b",
+					"name": "variable.other.hermitcss"
+				},
+				{
+					"match": "#[0-9a-fA-F]{3,8}\\b",
+					"name": "constant.other.color.rgb-value.css"
+				},
+				{
+					"match": "\\b\\d+(\\.\\d+)?(px|rem|em|%|vh|vw|vmin|vmax|deg|ms|s|fr|ch|ex|cm|mm|in|pt|pc)\\b",
+					"name": "constant.numeric.css"
+				},
+				{
+					"match": "\\b\\d+(\\.\\d+)?\\b",
+					"name": "constant.numeric.css"
+				}
+			]
+		}
+	}
+}

@@ -1,60 +1,29 @@
-import { compileFSS } from '../core/compiler.js';
+import { compileHermitCSS } from '../core/compiler.js';
 
-interface FssTransformResult {
+export type HermitViteTransformResult = {
 	code: string;
-	map: { mappings: string };
-}
-
-export type FssPluginOptions = {
-	runtimeImport?: string;
+	map?: null;
 };
 
-function buildFssModuleCode(compiledCss: string, runtimeImport: string): string {
-	const from = JSON.stringify(runtimeImport);
-	return [
-		`import { createFssShadowStyles } from ${from};`,
-		`const compiledCss = ${JSON.stringify(compiledCss)};`,
-		`let fssStyles;`,
-		`if (import.meta.hot) {`,
-		`  import.meta.hot.data ??= {};`,
-		`  fssStyles = import.meta.hot.data.fssStyles ??= createFssShadowStyles(compiledCss);`,
-		`} else {`,
-		`  fssStyles = createFssShadowStyles(compiledCss);`,
-		`}`,
-		`export default compiledCss;`,
-		`export { fssStyles };`,
-		`if (import.meta.hot) {`,
-		`  import.meta.hot.accept((newModule) => {`,
-		`    if (newModule?.default !== undefined) {`,
-		`      fssStyles.update(newModule.default);`,
-		`    }`,
-		`  });`,
-		`}`
-	].join('\n');
+function buildHermitModuleCode(compiledCss: string): string {
+	return [`const compiledCss = ${JSON.stringify(compiledCss)};`, `export default compiledCss;`].join('\n');
 }
 
-export default function fssPlugin(options: FssPluginOptions = {}) {
-	const runtimeImport = options.runtimeImport ?? 'fss-compiler';
-
-	const compile = async function (
-		this: any,
-		code: string,
-		id: string
-	): Promise<FssTransformResult | null> {
-		if (!id.endsWith('.fss')) {
+export default function hermitCssVitePlugin() {
+	const compile = async function (this: { error?: (m: string) => void }, code: string, id: string): Promise<HermitViteTransformResult | null> {
+		if (!id.endsWith('.hcss')) {
 			return null;
 		}
 
 		try {
-			const compiledCss: string = await compileFSS(code);
-			const jsCode: string = buildFssModuleCode(compiledCss, runtimeImport);
-
+			const compiledCss: string = await compileHermitCSS(code);
 			return {
-				code: jsCode,
-				map: { mappings: '' }
+				code: buildHermitModuleCode(compiledCss),
+				map: null
 			};
-		} catch (err: any) {
-			const errorMessage = `FSS Compilation Error in ${id}: ${err.message}`;
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			const errorMessage = `HermitCSS compilation error in ${id}: ${msg}`;
 
 			if (this && typeof this.error === 'function') {
 				this.error(errorMessage);
@@ -67,7 +36,7 @@ export default function fssPlugin(options: FssPluginOptions = {}) {
 	};
 
 	return {
-		name: 'vite-plugin-fss',
+		name: 'vite-plugin-hermitcss',
 		compile,
 		transform: compile
 	};

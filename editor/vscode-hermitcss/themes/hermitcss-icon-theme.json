@@ -1,21 +1,21 @@
 {
 	"extends": "vs-seti",
 	"iconDefinitions": {
-		"_fss_file": {
-			"iconPath": "../icons/fss.svg"
+		"_hermit_hcss_file": {
+			"iconPath": "../icons/hermit-crab.svg"
 		}
 	},
 	"fileExtensions": {
-		"fss": "_fss_file"
+		"hcss": "_hermit_hcss_file"
 	},
 	"light": {
 		"fileExtensions": {
-			"fss": "_fss_file"
+			"hcss": "_hermit_hcss_file"
 		}
 	},
 	"highContrast": {
 		"fileExtensions": {
-			"fss": "_fss_file"
+			"hcss": "_hermit_hcss_file"
 		}
 	}
 }

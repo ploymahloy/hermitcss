@@ -33,7 +33,7 @@ export async function processVariables(css: string): Promise<string> {
 
 	const processor = postcss([
 		{
-			postcssPlugin: 'fss-variables',
+			postcssPlugin: 'hermit-variables',
 			Declaration(decl) {
 				decl.value = valueParser(decl.value)
 					.walk(node => {

@@ -1,13 +1,6 @@
-import { fssStyles } from './demo.fss';
+import './bootstrap/legacy-layers.css';
+import hermitIsland from './widget.hcss';
 
-const host = document.querySelector('#app');
-if (!(host instanceof HTMLElement)) {
-	throw new Error('Expected #app element');
-}
+import { injectHermitStyleTag } from 'hermitcss/inject';
 
-const shadow = host.attachShadow({ mode: 'open' });
-fssStyles.adopt(shadow);
-shadow.innerHTML = `
-	<p class="title">FSS example</p>
-	<p class="hint">Edit src/demo.fss and save — Vite hot-reloads the stylesheet.</p>
-`;
+injectHermitStyleTag(hermitIsland, { document, id: 'hermit-bootstrap-demo-styles' });

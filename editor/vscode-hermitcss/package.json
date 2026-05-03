@@ -1,0 +1,71 @@
+{
+	"name": "vscode-hermitcss",
+	"displayName": "HermitCSS",
+	"description": "Syntax highlighting, diagnostics, completions, and hover for HermitCSS (.hcss files). Hermit crab file icons.",
+	"version": "1.0.0",
+	"publisher": "hermitcss",
+	"license": "ISC",
+	"type": "module",
+	"keywords": ["hermitcss", "hcss", "css", "cascade-layer", "language"],
+	"homepage": "https://github.com/ploymahloy/hermitcss/tree/main/editor",
+	"bugs": {
+		"url": "https://github.com/ploymahloy/hermitcss/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ploymahloy/hermitcss.git",
+		"directory": "editor/vscode-hermitcss"
+	},
+	"engines": {
+		"vscode": "^1.96.0"
+	},
+	"categories": ["Programming Languages"],
+	"galleryBanner": {
+		"color": "#1e1e1e",
+		"theme": "dark"
+	},
+	"activationEvents": ["onLanguage:hermitcss"],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "hermitcss",
+				"aliases": ["HermitCSS", "Hermit CSS"],
+				"extensions": [".hcss"],
+				"configuration": "./syntaxes/language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "hermitcss",
+				"scopeName": "source.css",
+				"path": "./syntaxes/hcss.tmLanguage.json"
+			}
+		],
+		"iconThemes": [
+			{
+				"id": "hermitcss-files",
+				"label": "HermitCSS (Hermit Crab)",
+				"path": "./themes/hermitcss-icon-theme.json"
+			}
+		]
+	},
+	"scripts": {
+		"compile": "npm run sync-assets && npm run copy-server && tsc -p ./",
+		"sync-assets": "mkdir -p syntaxes && cp ../grammars/hcss.tmLanguage.json syntaxes/ && cp ../grammars/language-configuration.json syntaxes/",
+		"copy-server": "mkdir -p server/out && cp ../hermitcss-language-server/out/server.js server/out/",
+		"watch": "tsc -watch -p ./",
+		"vscode:prepublish": "npm run compile",
+		"build": "npm run compile",
+		"vsix": "vsce package"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^9.0.1"
+	},
+	"devDependencies": {
+		"@vscode/vsce": "^3.7.1",
+		"@types/vscode": "^1.96.0",
+		"@types/node": "^25.6.0",
+		"typescript": "^6.0.3"
+	}
+}
