@@ -1,4 +1,4 @@
-# HermitCSS
+# HermitCSS <img width="276" height="183" alt="cwab" src="https://github.com/user-attachments/assets/ed7bcd7e-ddc8-4fac-906c-e3d00285d46d" />
 
 Author **predictable CSS** as `*.hcss` files (real CSS syntax) and ship it against messy legacy bundles by using **CSS cascade layers** in the document. HermitCSS is **light‑DOM only**—no Shadow DOM, no tie-in to Web Components—and works with plain HTML or any framework once your styles load in global CSS order.
 
