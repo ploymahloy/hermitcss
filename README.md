@@ -6,7 +6,7 @@ Hermit compilation is intentionally small:
 
 - Parses and validates authoring with PostCSS (`compileHermitCSS`).
 - Optionally expands Hermit **`@define { $tokens }`** placeholders (omit entirely if you prefer native **`var()`** everywhere).
-- A Vite plugin turns `*.hcss` imports into modules whose **default export** is the compiled CSS string.
+- A Vite plugin (`hermitCss()`) compiles `*.hcss` imports into modules whose **default export** is the compiled CSS string, and by default wraps unlayered top-level rules in ordinary `.css` files into **`@layer legacy`** (see Vite section for options).
 - Helpers like **`injectHermitStyleTag()`** glue quick demos together; bundlers typically emit a regular CSS bundle instead.
 
 ## Install
@@ -21,17 +21,15 @@ Editor support (grammar, diagnostics, completions) lives under [`editor/`](edito
 
 ## How Hermit stays the “Unlayered King”
 
-Every adopting app should ship a **canonical bootstrap stylesheet** that puts **everything that is _not_ HermitCSS** into one or more **`@layer` blocks** or equivalent (`@import "…" layer(legacy)`). Compiled Hermit **`*.hcss` output stays unlayered** (by default)—so Hermit beats messy IDs and specificity in those layers regardless of selector shape.
+The Vite plugin applies a legacy-layer transform automatically: unlayered top-level rules in ordinary `.css` files are wrapped into **`@layer legacy`** unless you configure otherwise. Compiled Hermit **`*.hcss` output stays unlayered**—so Hermit beats messy IDs and specificity in those legacy layers regardless of selector shape. For SSR or non-Vite pipelines, use **`wrapLegacyCssInLayer()`** from the core package (`hermitcss`).
 
 Minimal pattern:
 
 ```css
-/* app-legacy-layers.css — load this before Hermit output */
-@layer legacy-app {
-	#HugeLegacyButton {
-		padding: 60px !important;
-		color: fuchsia;
-	}
+/* app-legacy.css — regular legacy css; plugin wraps this automatically */
+#HugeLegacyButton {
+	padding: 60px !important;
+	color: fuchsia;
 }
 ```
 
@@ -43,7 +41,7 @@ Minimal pattern:
 }
 ```
 
-The `.btn-replacement` rules win against the `#HugeLegacyButton` declarations **because unlayered rules outrank layered ones**, not because you matched ID specificity.
+The `.btn-replacement` rules win against `#HugeLegacyButton` declarations **because unlayered rules outrank layered ones**, not because you matched ID specificity.
 
 ### Explicit layer order (alternative)
 
@@ -90,9 +88,21 @@ import { defineConfig } from 'vite';
 import hermitCss from 'hermitcss/vite-plugin';
 
 export default defineConfig({
-	plugins: [hermitCss()],
+	plugins: [
+		hermitCss({
+			// optional — wrapping is on by default
+			legacyLayer: { layer: 'legacy' },
+			// legacyLayer: false, // disable automatic legacy wrapping
+		}),
+	],
 });
 ```
+
+By default **`hermitCss()`** wraps unlayered top-level rules in `.css` files into `@layer legacy` and compiles `.hcss` files into JS modules exporting the stylesheet string.
+
+**Deprecated:** `hermitcss/vite-legacy-layer-plugin` is kept as a compatibility shim that delegates to **`hermitCss()`** (with a console warning once per process). Prefer a single **`hermitCss()`** plugin in `vite.config`.
+
+**Upgrading:** If you previously registered both `hermitcss/vite-legacy-layer-plugin` and `hermitcss/vite-plugin`, remove the legacy-layer plugin and keep a single **`hermitCss()`** call—otherwise Hermit hooks run twice. Plain `.css` is now layered by default when `legacyLayer` is not `false`; set **`legacyLayer: false`** only if your app relied on `.css` staying unlayered.
 
 Emitted module shape:
 
@@ -113,6 +123,22 @@ injectHermitStyleTag(shell, { document, id: 'hermit-slot' });
 Use **`hermitcss/inject`** in browser bundles so you do not pull the compiler graph (PostCSS, selector parsing, etc.). `import { injectHermitStyleTag } from 'hermitcss'` is fine for Node/tooling.
 
 Call this **after** your legacy layered CSS is linked so layering + source order behave as documented.
+
+## SSR/build pipelines
+
+Use the shared utility to wrap generated/collected legacy CSS without requiring an entry wrapper file:
+
+```typescript
+import { wrapLegacyCssInLayer } from 'hermitcss';
+
+const legacyCss = `
+#legacyRoot .banner { font-size: 42px; }
+`;
+
+const layeredLegacyCss = await wrapLegacyCssInLayer(legacyCss, { layer: 'legacy' });
+```
+
+This keeps server-produced legacy output layered while Hermit `.hcss` output stays unlayered.
 
 ## Repository layout
 

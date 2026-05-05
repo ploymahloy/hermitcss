@@ -19,6 +19,11 @@
       "import": "./dist/integrations/vite-plugin.js",
       "default": "./dist/integrations/vite-plugin.js"
     },
+    "./vite-legacy-layer-plugin": {
+      "types": "./dist/integrations/vite-legacy-layer-plugin.d.ts",
+      "import": "./dist/integrations/vite-legacy-layer-plugin.js",
+      "default": "./dist/integrations/vite-legacy-layer-plugin.js"
+    },
     "./inject": {
       "types": "./dist/runtime/light-dom.d.ts",
       "import": "./dist/runtime/light-dom.js",

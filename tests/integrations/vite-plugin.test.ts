@@ -21,10 +21,44 @@ describe('vite-plugin-hermitcss', () => {
 		);
 	});
 
-	it('ignores non-hcss files', async () => {
-		const result = await plugin.compile.call(plugin, '* {}', '/x/foo.css');
+	it('ignores non-css non-hcss files', async () => {
+		const result = await plugin.compile.call(plugin, 'export const x = 1', '/x/foo.ts');
 		expect(result).toBeNull();
 		expect(compiler.compileHermitCSS).not.toHaveBeenCalled();
+	});
+
+	it('wraps unlayered .css by default', async () => {
+		const result = await plugin.compile.call(plugin, '.hero { color: teal; }', '/tmp/site.css');
+		expect(result).not.toBeNull();
+		expect(result!.code).toContain('@layer legacy');
+		expect(result!.code).toContain('.hero');
+		expect(compiler.compileHermitCSS).not.toHaveBeenCalled();
+	});
+
+	it('supports .css ids with vite query suffixes', async () => {
+		const result = await plugin.compile.call(plugin, '.hero { color: teal; }', '/tmp/site.css?direct');
+		expect(result).not.toBeNull();
+		expect(result!.code).toContain('@layer legacy');
+	});
+
+	it('returns null for already-layered .css', async () => {
+		const source = '@layer vendor { .x { color: pink; } }';
+		const result = await plugin.compile.call(plugin, source, '/tmp/already-layered.css');
+		expect(result).toBeNull();
+	});
+
+	it('does not wrap .css when legacyLayer is false', async () => {
+		const noWrap = hermitCssVitePlugin({ legacyLayer: false });
+		const result = await noWrap.compile.call(noWrap, '.hero { color: teal; }', '/tmp/site.css');
+		expect(result).toBeNull();
+		expect(compiler.compileHermitCSS).not.toHaveBeenCalled();
+	});
+
+	it('uses custom legacy layer name when configured', async () => {
+		const custom = hermitCssVitePlugin({ legacyLayer: { layer: 'legacy-app' } });
+		const result = await custom.compile.call(custom, '.hero { color: teal; }', '/tmp/site.css');
+		expect(result).not.toBeNull();
+		expect(result!.code).toContain('@layer legacy-app');
 	});
 
 	it('compiles .hcss into a JS module with default CSS string export', async () => {
@@ -39,6 +73,11 @@ describe('vite-plugin-hermitcss', () => {
 
 		const exported = readCompiledCssFromGeneratedModule(result!.code);
 		expect(exported).toContain(`seed: "${hcssContent}"`);
+	});
+
+	it('ignores .hcss for legacy wrap path', async () => {
+		await plugin.compile.call(plugin, '.x { color: red; }', 'widget.hcss');
+		expect(compiler.compileHermitCSS).toHaveBeenCalled();
 	});
 
 	it('builds runnable ESM with the compiled stylesheet', async () => {
